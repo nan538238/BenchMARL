@@ -151,7 +151,7 @@ class AreaDefenseScenario(BaseScenario):
             self.red_pos[moving, i, 0] -= self.red_speed
             delta_y = (target_y - self.red_pos[:, i, 1]).clamp(-0.035, 0.035)
             self.red_pos[moving, i, 1] += delta_y[moving]
-            red.set_pos(self.red_pos[:, i])
+            red.set_pos(self.red_pos[:, i], batch_index=None)
 
         distances = self._blue_red_distance()
         captured = (distances <= self.capture_radius) & self.alive & active[:, None]
