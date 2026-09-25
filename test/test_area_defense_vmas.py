@@ -87,6 +87,29 @@ class AreaDefenseVmasTest(unittest.TestCase):
                 finally:
                     env.close()
 
+    def test_v2_oracle_rule_steps(self):
+        if (
+            importlib.util.find_spec("torchrl") is None
+            or importlib.util.find_spec("vmas") is None
+        ):
+            self.skipTest("TorchRL and VMAS are required for the runtime smoke test")
+
+        from benchmarl.environments.vmas.common import VmasTask
+        from examples.check_area_defense_v2_rule import oracle_lane_rule
+
+        task = VmasTask.AREA_DEFENSE_V2.get_task()
+        task.config["guidance_mode"] = "oracle"
+        env = task.get_env_fun(
+            num_envs=1, continuous_actions=True, seed=7, device="cpu"
+        )()
+        try:
+            rollout = env.rollout(3, policy=oracle_lane_rule)
+            action = rollout.get(("blue", "action"))
+            self.assertEqual(tuple(action.shape[-2:]), (3, 2))
+            self.assertLessEqual(action.abs().max().item(), 1.0)
+        finally:
+            env.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -44,11 +44,14 @@ def _one(experiment: Experiment, scenario_seed: int) -> Dict[str, float]:
     group = next(iter(experiment.group_map))
     success = rollout.get(("next", group, "info", "success"))
     breach = rollout.get(("next", group, "info", "breach"))
+    capture_events = rollout.get(("next", group, "info", "captures"))
     reward = rollout.get(("next", group, "reward"))
     scenario_id = rollout.get(("next", group, "info", "scenario_id"))
+    n_agents = len(experiment.group_map[group])
     return {
         "success": int(success.max().item() > 0),
         "breach": int(breach.max().item() > 0),
+        "captures": int(capture_events.reshape(-1, n_agents)[:, 0].sum().item()),
         "return": float(reward.mean(dim=-2).sum().item()),
         "steps": int(rollout.batch_size[-1]),
         "scenario_id": int(scenario_id.flatten()[0].item()),
@@ -126,6 +129,8 @@ def main() -> None:
                     "oracle_success": guide["success"],
                     "baseline_breach": base["breach"],
                     "oracle_breach": guide["breach"],
+                    "baseline_captures": base["captures"],
+                    "oracle_captures": guide["captures"],
                     "baseline_return": base["return"],
                     "oracle_return": guide["return"],
                     "baseline_steps": base["steps"],
@@ -148,6 +153,18 @@ def main() -> None:
         / args.episodes,
         "paired_success_gain": sum(deltas) / args.episodes,
         "paired_gain_ci95": _paired_ci(deltas, args.seed + 701),
+        "baseline_mean_captures": sum(row["baseline_captures"] for row in rows)
+        / args.episodes,
+        "oracle_mean_captures": sum(row["oracle_captures"] for row in rows)
+        / args.episodes,
+        "baseline_capture_distribution": {
+            str(count): sum(row["baseline_captures"] == count for row in rows)
+            for count in range(4)
+        },
+        "oracle_capture_distribution": {
+            str(count): sum(row["oracle_captures"] == count for row in rows)
+            for count in range(4)
+        },
         "baseline_mean_return": sum(row["baseline_return"] for row in rows)
         / args.episodes,
         "oracle_mean_return": sum(row["oracle_return"] for row in rows) / args.episodes,

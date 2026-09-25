@@ -73,3 +73,19 @@ python examples/evaluate_area_defense.py --baseline "<none检查点路径>" --or
 ```
 
 脚本会检查两组都来自 v2，并确认除 `guidance_mode` 外的任务参数一致。两套策略会在相同场景种子下评估。重点看 `summary.json` 中的两组成功率、配对成功率差及其区间，同时检查逐局结果。单个训练种子只用于初筛；若两组都可学且 oracle 有稳定增益，再扩展到多个独立训练种子。若两组成功率长期都接近 0% 或 100%，先检查任务难度，不要据此判断真人介入价值。
+
+## 两组均未获胜时：检查任务可完成性与部分进展
+
+下面的规则控制器读取与 `oracle` 策略相同的四分类战术提示：集中或佯攻时派三名蓝方守最终线路，分散时每条线路派一人。它不训练参数，只用于检查当前动作接口与时限下能否完成拦截。运行后分别查看成功局数和平均拦截人数；规则控制器失败并不能单独证明任务物理上不可能，也可能是这个控制器不够好。
+
+```bash
+python examples/check_area_defense_v2_rule.py --episodes 50 --seed 10000
+```
+
+评估脚本现已额外输出每局 `baseline_captures`、`oracle_captures`，汇总中包含两组平均拦截人数及 0、1、2、3 人的局数分布。旧评估输出不会自动更新；对已有检查点重新评估时必须选择新的输出目录。例如：
+
+```bash
+python examples/evaluate_area_defense.py --baseline "<none检查点路径>" --oracle "<oracle检查点路径>" --episodes 200 --seed 10000 --output outputs/v2_eval_seed0_captures
+```
+
+如果规则控制器能赢、MAPPO 两组仍是 0 胜率，应先检查奖励塑形和训练难度，不增加真人介入模块或直接扩大训练种子。
