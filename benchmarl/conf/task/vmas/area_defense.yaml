@@ -1,0 +1,11 @@
+defaults:
+  - vmas_area_defense_config
+  - _self_
+
+# The policy and oracle runs must use identical settings except guidance_mode.
+max_steps: 120
+guidance_mode: "none"  # none or oracle
+opponent_style: mixed  # mixed, concentrated, spread, feint, late_switch
+sensor_range: 0.65
+red_speed: 0.022
+capture_radius: 0.11
