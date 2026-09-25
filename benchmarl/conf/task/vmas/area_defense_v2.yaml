@@ -1,0 +1,11 @@
+defaults:
+  - vmas_area_defense_v2_config
+  - _self_
+
+# New task name keeps v1 checkpoints separate from the revised rules.
+max_steps: 120
+guidance_mode: "none"
+opponent_style: mixed
+sensor_range: 0.65
+red_speed: 0.022
+capture_radius: 0.11

@@ -83,6 +83,9 @@ class AreaDefenseScenario(BaseScenario):
         blue_pos = torch.stack([agent.state.pos for agent in self.blue], dim=1)
         return torch.cdist(self.red_pos, blue_pos).amin(dim=-1)
 
+    def _capture(self, distances: Tensor, active: Tensor) -> Tensor:
+        return (distances <= self.capture_radius) & self.alive & active[:, None]
+
     def reset_world_at(self, env_index: Optional[int] = None) -> None:
         batch = self.world.batch_dim if env_index is None else 1
         device = self.world.device
@@ -154,7 +157,7 @@ class AreaDefenseScenario(BaseScenario):
             red.set_pos(self.red_pos[:, i], batch_index=None)
 
         distances = self._blue_red_distance()
-        captured = (distances <= self.capture_radius) & self.alive & active[:, None]
+        captured = self._capture(distances, active)
         self.alive &= ~captured
         capture_count = captured.sum(dim=-1).to(torch.float)
         self._captures = capture_count

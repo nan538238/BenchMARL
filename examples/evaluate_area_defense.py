@@ -26,7 +26,7 @@ def _load(checkpoint: Path) -> Experiment:
             "create_json": False,
         },
     )
-    if experiment.task.name.lower() != "area_defense":
+    if experiment.task.name.lower() not in ("area_defense", "area_defense_v2"):
         raise ValueError(f"Not an area-defense checkpoint: {checkpoint}")
     return experiment
 
@@ -93,11 +93,20 @@ def main() -> None:
             raise ValueError("baseline checkpoint must have guidance_mode=none")
         if oracle.task.config["guidance_mode"] != "oracle":
             raise ValueError("oracle checkpoint must have guidance_mode=oracle")
-        if (
-            baseline.task.config["opponent_style"]
-            != oracle.task.config["opponent_style"]
-        ):
-            raise ValueError("Both checkpoints must use the same opponent_style")
+        if baseline.task.name != oracle.task.name:
+            raise ValueError("Both checkpoints must use the same task version")
+        baseline_settings = {
+            key: value
+            for key, value in baseline.task.config.items()
+            if key != "guidance_mode"
+        }
+        oracle_settings = {
+            key: value
+            for key, value in oracle.task.config.items()
+            if key != "guidance_mode"
+        }
+        if baseline_settings != oracle_settings:
+            raise ValueError("Task settings differ beyond guidance_mode")
         rows = []
         for episode in range(args.episodes):
             scenario_seed = args.seed + episode * 1009

@@ -23,15 +23,23 @@ class VmasClass(TaskClass):
         device: DEVICE_TYPING,
     ) -> Callable[[], EnvBase]:
         config = copy.deepcopy(self.config)
-        if self.name == "AREA_DEFENSE":
+        if self.name in ("AREA_DEFENSE", "AREA_DEFENSE_V2"):
             from benchmarl.environments.vmas.area_defense_scenario import (
                 AreaDefenseScenario,
             )
+            from benchmarl.environments.vmas.area_defense_v2_scenario import (
+                AreaDefenseV2Scenario,
+            )
 
             config["episode_horizon"] = config["max_steps"]
+            scenario_class = (
+                AreaDefenseV2Scenario
+                if self.name == "AREA_DEFENSE_V2"
+                else AreaDefenseScenario
+            )
 
             return lambda: VmasEnv(
-                scenario=AreaDefenseScenario(),
+                scenario=scenario_class(),
                 num_envs=num_envs,
                 continuous_actions=continuous_actions,
                 seed=seed,
@@ -123,6 +131,7 @@ class VmasTask(Task):
     DISCOVERY = None
     FOOTBALL = None
     AREA_DEFENSE = None
+    AREA_DEFENSE_V2 = None
     SIMPLE_ADVERSARY = None
     SIMPLE_CRYPTO = None
     SIMPLE_PUSH = None
