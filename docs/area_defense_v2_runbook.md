@@ -130,3 +130,15 @@ python examples/trace_area_defense_policy.py --checkpoint '<v3检查点完整路
 ```
 
 输出列出每名蓝方的 `pos`、`action`、可见红方、是否仍能拦截，以及实际 `capture_steps`。先看蓝方是否有效移动、是否挤在同一线路、是否在红方靠近边界前到位。这个诊断不会修改检查点，也不用再次训练。
+
+## v4 分工奖励诊断
+
+v3 的固定 `spread` 轨迹显示三名蓝方从一开始都向上移动，最终只拦截上方一路。v4 仅改变训练奖励中的移动塑形：蓝方 `i` 靠近红方 `i` 得到对应进展奖励；动作、观察、拦截规则和成功条件与 v3 相同。该奖励利用训练环境里的红方身份作为监督，目的是诊断“缺少明确分工奖励”是否是固定 `spread` 学不好的原因，不能直接作为真人介入效果结论。
+
+在已同步 v4 代码的隔离工作树与 `pytorch-2.1.1` 环境中，先运行 `python -m unittest discover -s test -p test_area_defense_v4.py -v`。通过后，以与 v3 相同的 20 万帧预算运行：
+
+```bash
+python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v4 seed=0 task.guidance_mode=none task.opponent_style=spread experiment.max_n_frames=200000 experiment.on_policy_collected_frames_per_batch=2000 experiment.on_policy_n_envs_per_worker=10 experiment.on_policy_n_minibatch_iters=4 experiment.on_policy_minibatch_size=500 experiment.evaluation=true experiment.evaluation_interval=20000 experiment.evaluation_episodes=20 experiment.render=false 'experiment.loggers=[csv]' experiment.create_json=false experiment.checkpoint_at_end=true hydra.run.dir="$PWD/outputs/v4_diag_spread_none_seed0"
+```
+
+训练结束后，在同样的 `seed=10000` 上评估最终检查点，并用轨迹诊断核实三名蓝方是否真正分守三条线路。v3/v4 奖励不同，比较 `captures`、`success` 和动作轨迹，不直接比较 return。

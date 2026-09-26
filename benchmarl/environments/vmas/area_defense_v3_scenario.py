@@ -21,6 +21,11 @@ class AreaDefenseV3Scenario(AreaDefenseV2Scenario):
         positions = torch.stack([agent.state.pos for agent in self.blue], dim=1)
         self._last_blue_pos[index] = positions[index]
 
+    def _movement_progress(self, blue_pos: torch.Tensor) -> torch.Tensor:
+        return defender_progress(
+            self.red_pos, self._last_blue_pos, blue_pos, self.alive, self.blue_available
+        )
+
     def _advance_and_score(self) -> None:
         active = ~self._done
         self.steps[active] += 1
@@ -38,9 +43,7 @@ class AreaDefenseV3Scenario(AreaDefenseV2Scenario):
             red.set_pos(self.red_pos[:, i], batch_index=None)
 
         blue_pos = torch.stack([agent.state.pos for agent in self.blue], dim=1)
-        shaping = defender_progress(
-            self.red_pos, self._last_blue_pos, blue_pos, self.alive, self.blue_available
-        )
+        shaping = self._movement_progress(blue_pos)
         distances = self._blue_red_distance()
         captured = self._capture(distances, active)
         self.alive &= ~captured
