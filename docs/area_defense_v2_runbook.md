@@ -120,3 +120,13 @@ python -c 'from pathlib import Path; from examples.evaluate_area_defense import 
 ```
 
 判定重点是 `captures` 和 `success`，不要用 v2/v3 原始 return 比高低。固定 `spread` 的 `scenario_id` 已是同一任务，单局结果是能力诊断；若 v3 仍只拦截 0–1 人，就停止 `oracle` 组和多随机种子训练，进一步检查策略动作、时间窗口和奖励权重。若 v3 能稳定拦截 3 人，再测试多个场景种子，随后回到 `mixed` 下做同预算 `none`/`oracle` 对比。
+
+### v3 仍只拦截 1 人时：检查策略轨迹
+
+同步包含 `examples/trace_area_defense_policy.py` 的提交后，先用 `find outputs/v3_diag_spread_none_seed0 -name checkpoint_200000.pt -print` 找到完整路径，再运行下面的只读诊断；把占位符换成打印出的路径：
+
+```bash
+python examples/trace_area_defense_policy.py --checkpoint '<v3检查点完整路径>' --seed 10000 --interval 20
+```
+
+输出列出每名蓝方的 `pos`、`action`、可见红方、是否仍能拦截，以及实际 `capture_steps`。先看蓝方是否有效移动、是否挤在同一线路、是否在红方靠近边界前到位。这个诊断不会修改检查点，也不用再次训练。
