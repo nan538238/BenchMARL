@@ -24,9 +24,9 @@ def main() -> None:
     experiment = _load(args.checkpoint)
     try:
         if experiment.task.name.lower() not in (
-            "area_defense_v2", "area_defense_v3", "area_defense_v4"
+            "area_defense_v2", "area_defense_v3", "area_defense_v4", "area_defense_v5"
         ):
-            parser.error("this trace expects a v2, v3, or v4 checkpoint")
+            parser.error("this trace expects a v2-v5 checkpoint")
         experiment.test_env.set_seed(args.seed)
         with torch.no_grad(), set_exploration_type(ExplorationType.DETERMINISTIC):
             rollout = experiment.test_env.rollout(

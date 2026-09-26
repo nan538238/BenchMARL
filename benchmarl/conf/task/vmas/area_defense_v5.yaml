@@ -1,0 +1,10 @@
+defaults:
+  - vmas_area_defense_v5_config
+  - _self_
+
+max_steps: 120
+guidance_mode: "none"
+opponent_style: mixed
+sensor_range: 0.65
+red_speed: 0.022
+capture_radius: 0.11

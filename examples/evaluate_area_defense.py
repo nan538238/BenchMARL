@@ -27,7 +27,7 @@ def _load(checkpoint: Path) -> Experiment:
         },
     )
     if experiment.task.name.lower() not in (
-        "area_defense", "area_defense_v2", "area_defense_v3", "area_defense_v4"
+        "area_defense", "area_defense_v2", "area_defense_v3", "area_defense_v4", "area_defense_v5"
     ):
         raise ValueError(f"Not an area-defense checkpoint: {checkpoint}")
     return experiment

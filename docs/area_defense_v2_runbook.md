@@ -142,3 +142,15 @@ python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v4 seed=0 task.gu
 ```
 
 训练结束后，在同样的 `seed=10000` 上评估最终检查点，并用轨迹诊断核实三名蓝方是否真正分守三条线路。v3/v4 奖励不同，比较 `captures`、`success` 和动作轨迹，不直接比较 return。
+
+## v5 个体奖励诊断
+
+v4 将三名蓝方对应目标的移动进展加总后，仍把同一个团队奖励发给所有蓝方。v5 保持 v4 的目标分配、观察和终局团队奖励，只将移动塑形分别发给对应蓝方；三人奖励的平均值与 v4 团队奖励相同。此实验用于检查个体信用分配是否导致三人一起向上移动，并非真人介入实验。
+
+同步 v5 代码后，先运行 `python -m unittest discover -s test -p test_area_defense_v5.py -v`。通过后用相同的 20 万帧预算训练固定 `spread`；每 2 万帧保留一个检查点，以免最终策略退化时丢失中间结果：
+
+```bash
+python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v5 seed=0 task.guidance_mode=none task.opponent_style=spread experiment.max_n_frames=200000 experiment.on_policy_collected_frames_per_batch=2000 experiment.on_policy_n_envs_per_worker=10 experiment.on_policy_n_minibatch_iters=4 experiment.on_policy_minibatch_size=500 experiment.evaluation=true experiment.evaluation_interval=20000 experiment.evaluation_episodes=20 experiment.render=false 'experiment.loggers=[csv]' experiment.create_json=false experiment.checkpoint_interval=20000 experiment.checkpoint_at_end=true experiment.keep_checkpoints_num=12 hydra.run.dir="$PWD/outputs/v5_diag_spread_none_seed0"
+```
+
+训练完成后按检查点逐一评估 `captures` 与 `success`，再对表现最好的一份运行轨迹诊断。不要根据训练进度条的 mean return 单独判定是否学会防守。
