@@ -89,3 +89,34 @@ python examples/evaluate_area_defense.py --baseline "<none检查点路径>" --or
 ```
 
 如果规则控制器能赢、MAPPO 两组仍是 0 胜率，应先检查奖励塑形和训练难度，不增加真人介入模块或直接扩大训练种子。
+
+## v3 诊断：先验证修正后的奖励能否学会固定 spread
+
+已有 v2 固定 `spread` 诊断在 20 万帧时只拦截 1/3，评估回报从约 -2.43 降到 -2.71。v2 的距离奖励会把红方自行移动造成的距离缩短记为蓝方进步，也会计入已失去拦截资格的蓝方。v3 只修正这项塑形：在同一时刻的红方位置上比较蓝方移动前后，且只计入仍有拦截资格的蓝方。v2 环境及检查点保持不变；v2 和 v3 的回报数值不可直接比较，应比较成功率和拦截人数。
+
+先在本地推送开发分支，再按“准备：同步代码”中的步骤在服务器拉取。确认服务器已更新至含 v3 的提交后，在 `pytorch-2.1.1` 环境运行：
+
+```bash
+python -m unittest discover -s test -p test_area_defense_v3.py -v
+```
+
+两个测试都通过后，跑 v3 固定 `spread`、`none` 提示的 2000 帧冒烟训练；命令占一整行：
+
+```bash
+python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v3 seed=0 task.guidance_mode=none task.opponent_style=spread experiment.max_n_frames=2000 experiment.on_policy_collected_frames_per_batch=1000 experiment.on_policy_n_envs_per_worker=2 experiment.on_policy_n_minibatch_iters=1 experiment.on_policy_minibatch_size=250 experiment.evaluation=true experiment.evaluation_interval=1000 experiment.evaluation_episodes=2 experiment.render=false 'experiment.loggers=[csv]' experiment.create_json=false experiment.checkpoint_at_end=true hydra.run.dir="$PWD/outputs/v3_smoke_spread_none_seed0"
+```
+
+冒烟训练和测试都正常，再以与 v2 固定 `spread` 相同的预算从头训练；不能用 v2 检查点续训 v3：
+
+```bash
+python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v3 seed=0 task.guidance_mode=none task.opponent_style=spread experiment.max_n_frames=200000 experiment.on_policy_collected_frames_per_batch=2000 experiment.on_policy_n_envs_per_worker=10 experiment.on_policy_n_minibatch_iters=4 experiment.on_policy_minibatch_size=500 experiment.evaluation=true experiment.evaluation_interval=20000 experiment.evaluation_episodes=20 experiment.render=false 'experiment.loggers=[csv]' experiment.create_json=false experiment.checkpoint_at_end=true hydra.run.dir="$PWD/outputs/v3_diag_spread_none_seed0"
+```
+
+查看评估曲线，并对最终检查点做一个固定场景能力检查：
+
+```bash
+find outputs/v3_diag_spread_none_seed0 -name 'eval_reward_episode_reward_mean.csv' -print -exec cat {} \;
+python -c 'from pathlib import Path; from examples.evaluate_area_defense import _load,_one; p=next(Path("outputs/v3_diag_spread_none_seed0").glob("*/checkpoints/checkpoint_200000.pt")); e=_load(p); print(_one(e,10000)); e.close()'
+```
+
+判定重点是 `captures` 和 `success`，不要用 v2/v3 原始 return 比高低。固定 `spread` 的 `scenario_id` 已是同一任务，单局结果是能力诊断；若 v3 仍只拦截 0–1 人，就停止 `oracle` 组和多随机种子训练，进一步检查策略动作、时间窗口和奖励权重。若 v3 能稳定拦截 3 人，再测试多个场景种子，随后回到 `mixed` 下做同预算 `none`/`oracle` 对比。

@@ -26,7 +26,9 @@ def _load(checkpoint: Path) -> Experiment:
             "create_json": False,
         },
     )
-    if experiment.task.name.lower() not in ("area_defense", "area_defense_v2"):
+    if experiment.task.name.lower() not in (
+        "area_defense", "area_defense_v2", "area_defense_v3"
+    ):
         raise ValueError(f"Not an area-defense checkpoint: {checkpoint}")
     return experiment
 
