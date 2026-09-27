@@ -154,3 +154,15 @@ python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v5 seed=0 task.gu
 ```
 
 训练完成后按检查点逐一评估 `captures` 与 `success`，再对表现最好的一份运行轨迹诊断。不要根据训练进度条的 mean return 单独判定是否学会防守。
+
+## v6 共享策略角色标识诊断
+
+v5 的 80k 和 120k 检查点都只拦截 1 人，200k 退化为 0 人；轨迹中三名蓝方仍给出近似动作。v6 保持 v5 的个体奖励、环境和共享策略设置，在每名蓝方观察末尾加入三维 one-hot 身份标识，使共享网络能够区分“下、中、上”三种固定职责。该标识是角色条件，不是红方意图或 oracle 信息。
+
+同步 v6 代码后，先运行 `python -m unittest discover -s test -p test_area_defense_v6.py -v`。通过后使用与 v5 相同的训练预算与检查点间隔：
+
+```bash
+python benchmarl/run.py algorithm=mappo task=vmas/area_defense_v6 seed=0 task.guidance_mode=none task.opponent_style=spread experiment.max_n_frames=200000 experiment.on_policy_collected_frames_per_batch=2000 experiment.on_policy_n_envs_per_worker=10 experiment.on_policy_n_minibatch_iters=4 experiment.on_policy_minibatch_size=500 experiment.evaluation=true experiment.evaluation_interval=20000 experiment.evaluation_episodes=20 experiment.render=false 'experiment.loggers=[csv]' experiment.create_json=false experiment.checkpoint_interval=20000 experiment.checkpoint_at_end=true experiment.keep_checkpoints_num=12 hydra.run.dir="$PWD/outputs/v6_diag_spread_none_seed0"
+```
+
+逐一评估中间检查点。若 v6 仍无法在固定 `spread` 中稳定拦截 3 人，就停止继续增加环境版本：现有 MAPPO 设置或任务动力学需要系统重构，不能把后续 `none`/`oracle` 差异解释为人类信息价值。

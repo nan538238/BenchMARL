@@ -24,9 +24,13 @@ def main() -> None:
     experiment = _load(args.checkpoint)
     try:
         if experiment.task.name.lower() not in (
-            "area_defense_v2", "area_defense_v3", "area_defense_v4", "area_defense_v5"
+            "area_defense_v2",
+            "area_defense_v3",
+            "area_defense_v4",
+            "area_defense_v5",
+            "area_defense_v6",
         ):
-            parser.error("this trace expects a v2-v5 checkpoint")
+            parser.error("this trace expects a v2-v6 checkpoint")
         experiment.test_env.set_seed(args.seed)
         with torch.no_grad(), set_exploration_type(ExplorationType.DETERMINISTIC):
             rollout = experiment.test_env.rollout(
@@ -38,7 +42,8 @@ def main() -> None:
 
         group = next(iter(experiment.group_map))
         steps = rollout.batch_size[-1]
-        observation = rollout.get((group, "observation")).reshape(steps, 3, 24)
+        observation = rollout.get((group, "observation"))
+        observation = observation.reshape(steps, 3, observation.shape[-1])
         action = rollout.get((group, "action")).reshape(steps, 3, -1)
         capture_events = rollout.get(("next", group, "info", "captures"))
         capture_events = capture_events.reshape(steps, 3, -1)[:, 0, 0]
@@ -60,6 +65,11 @@ def main() -> None:
                         ],
                         "visible_red": [int(obs[index].item()) for index in (10, 13, 16)],
                         "available": int(obs[21 + agent].item()),
+                        "role": (
+                            [int(value) for value in obs[24:27].tolist()]
+                            if obs.shape[-1] >= 27
+                            else None
+                        ),
                     }
                 )
             samples.append({"step": step, "blue": blue})

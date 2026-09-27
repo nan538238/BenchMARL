@@ -24,7 +24,12 @@ class VmasClass(TaskClass):
     ) -> Callable[[], EnvBase]:
         config = copy.deepcopy(self.config)
         if self.name in (
-            "AREA_DEFENSE", "AREA_DEFENSE_V2", "AREA_DEFENSE_V3", "AREA_DEFENSE_V4", "AREA_DEFENSE_V5"
+            "AREA_DEFENSE",
+            "AREA_DEFENSE_V2",
+            "AREA_DEFENSE_V3",
+            "AREA_DEFENSE_V4",
+            "AREA_DEFENSE_V5",
+            "AREA_DEFENSE_V6",
         ):
             from benchmarl.environments.vmas.area_defense_scenario import (
                 AreaDefenseScenario,
@@ -41,6 +46,9 @@ class VmasClass(TaskClass):
             from benchmarl.environments.vmas.area_defense_v5_scenario import (
                 AreaDefenseV5Scenario,
             )
+            from benchmarl.environments.vmas.area_defense_v6_scenario import (
+                AreaDefenseV6Scenario,
+            )
 
             config["episode_horizon"] = config["max_steps"]
             scenario_class = {
@@ -49,6 +57,7 @@ class VmasClass(TaskClass):
                 "AREA_DEFENSE_V3": AreaDefenseV3Scenario,
                 "AREA_DEFENSE_V4": AreaDefenseV4Scenario,
                 "AREA_DEFENSE_V5": AreaDefenseV5Scenario,
+                "AREA_DEFENSE_V6": AreaDefenseV6Scenario,
             }[self.name]
 
             return lambda: VmasEnv(
@@ -148,6 +157,7 @@ class VmasTask(Task):
     AREA_DEFENSE_V3 = None
     AREA_DEFENSE_V4 = None
     AREA_DEFENSE_V5 = None
+    AREA_DEFENSE_V6 = None
     SIMPLE_ADVERSARY = None
     SIMPLE_CRYPTO = None
     SIMPLE_PUSH = None
